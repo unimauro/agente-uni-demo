@@ -2,7 +2,7 @@
 
 Demo web interactiva del agente **Suyay** 🌱 ("esperanza" en quechua), un coach
 académico por WhatsApp para estudiantes de ingeniería de la **UNI-FIIS**,
-construido con **Claude**.
+potenciado con **IA generativa**.
 
 🔗 **Probar la demo:** https://unimauro.github.io/agente-uni-demo/
 
@@ -20,9 +20,9 @@ Conversas con Suyay como uno de 4 alumnos ficticios y el agente:
 ## Importante
 
 Esta es una **demo del lado del cliente**: las respuestas son **simuladas** en el
-navegador, **sin servidor, sin Claude API y sin Twilio**. Los alumnos y notas son
+navegador, **sin servidor, sin API de IA y sin Twilio**. Los alumnos y notas son
 **ficticios** — no hay ningún dato personal real. El bot completo (Express + SQLite +
-Claude Haiku 4.5 + WhatsApp/Twilio) vive en un repositorio privado.
+un LLM + WhatsApp/Twilio) vive en un repositorio privado.
 
 ## Proyecto
 
