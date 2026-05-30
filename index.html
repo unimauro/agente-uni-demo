@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suyay · Coach Académico FIIS-UNI — Demo interactiva</title>
+<meta name="description" content="Demo interactiva del agente Suyay, coach académico por WhatsApp para estudiantes de ingeniería de la UNI-FIIS. Construido con Claude. Respuestas simuladas del lado del cliente, sin datos reales.">
+<link rel="icon" type="image/png" href="https://github.com/unimauro.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --uni-red:#7a0019; --uni-red-deep:#5c0013; --uni-red-bright:#b71c1c;
+    --wa-bg:#0b141a; --wa-panel:#111b21; --wa-head:#202c33; --wa-in:#202c33;
+    --wa-out:#005c4b; --wa-text:#e9edef; --wa-muted:#8696a0; --green:#25d366;
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:
+      radial-gradient(1200px 600px at 80% -10%, #b71c1c33, transparent),
+      linear-gradient(135deg,#7a0019,#5c0013 60%,#220008);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .phone{width:100%;max-width:420px;height:min(820px,92vh);background:var(--wa-bg);
+      border-radius:26px;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 10px #000a, 0 0 0 11px #ffffff14;
+      overflow:hidden;display:flex;flex-direction:column;position:relative}
+
+  /* ---------- Landing ---------- */
+  .landing{position:absolute;inset:0;background:linear-gradient(160deg,#7a0019,#3a000c);
+      display:flex;flex-direction:column;padding:30px 26px;color:#fff;z-index:5;overflow-y:auto}
+  .landing.hide{display:none}
+  .brand{display:flex;align-items:center;gap:.7em;margin-top:8px}
+  .brand-mark{background:#fff;color:var(--uni-red);font-weight:800;width:48px;height:48px;
+      border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:.85em}
+  .brand h1{margin:0;font-size:1.15em}
+  .brand p{margin:.1em 0 0;font-size:.78em;opacity:.85}
+  .landing .lead{margin:26px 0 6px;font-size:1.45em;font-weight:800;line-height:1.25}
+  .landing .sub{font-size:.9em;opacity:.9;line-height:1.5;margin-bottom:18px}
+  .pick-label{font-size:.7em;text-transform:uppercase;letter-spacing:.12em;opacity:.7;margin:10px 0 8px}
+  .student-btn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+      background:#ffffff14;border:1px solid #ffffff26;color:#fff;border-radius:14px;padding:12px 14px;
+      margin-bottom:10px;font-family:inherit;transition:.15s}
+  .student-btn:hover{background:#ffffff24;transform:translateY(-1px)}
+  .avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:.95em;flex-shrink:0;color:#fff}
+  .sb-info{flex:1;min-width:0}
+  .sb-name{font-weight:700;font-size:.95em}
+  .sb-meta{font-size:.74em;opacity:.85}
+  .pill{font-size:.62em;font-weight:700;padding:.2em .6em;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
+  .pill.alto{background:#ef4444;color:#fff}
+  .pill.medio{background:#f59e0b;color:#1a1300}
+  .pill.bajo{background:#22c55e;color:#04130a}
+  .disclaimer{margin-top:auto;padding-top:18px;font-size:.7em;opacity:.72;line-height:1.5}
+  .disclaimer a{color:#fff}
+
+  /* ---------- Chat ---------- */
+  .chat{flex:1;display:none;flex-direction:column;min-height:0}
+  .chat.show{display:flex}
+  .chat-head{background:var(--wa-head);color:var(--wa-text);display:flex;align-items:center;gap:11px;
+      padding:11px 14px;flex-shrink:0}
+  .back{background:none;border:none;color:var(--wa-text);font-size:1.3em;cursor:pointer;padding:0 2px;line-height:1}
+  .ch-avatar{width:38px;height:38px;border-radius:50%;background:var(--green);display:flex;
+      align-items:center;justify-content:center;font-size:1.1em}
+  .ch-info{flex:1;min-width:0}
+  .ch-name{font-weight:600;font-size:.95em}
+  .ch-status{font-size:.72em;color:var(--wa-muted)}
+  .messages{flex:1;overflow-y:auto;padding:16px 12px 6px;display:flex;flex-direction:column;gap:6px;
+      background-image:linear-gradient(rgba(11,20,26,.96),rgba(11,20,26,.96)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='6' cy='6' r='1' fill='%23223' /%3E%3C/svg%3E")}
+  .bubble{max-width:82%;padding:7px 11px 8px;border-radius:9px;font-size:.9em;line-height:1.42;
+      color:var(--wa-text);white-space:pre-wrap;word-wrap:break-word;position:relative;
+      animation:pop .18s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .bubble.in{background:var(--wa-in);align-self:flex-start;border-top-left-radius:2px}
+  .bubble.out{background:var(--wa-out);align-self:flex-end;border-top-right-radius:2px}
+  .bubble .t{display:block;font-size:.62em;color:#ffffff8c;text-align:right;margin-top:2px}
+  .day-sep{align-self:center;background:#182229;color:var(--wa-muted);font-size:.68em;
+      padding:.3em .8em;border-radius:7px;margin:6px 0}
+  .typing{align-self:flex-start;background:var(--wa-in);border-radius:9px;border-top-left-radius:2px;
+      padding:10px 13px;display:flex;gap:4px}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--wa-muted);animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+  .quick{display:flex;gap:7px;overflow-x:auto;padding:8px 12px;background:var(--wa-bg);flex-shrink:0;
+      scrollbar-width:none}
+  .quick::-webkit-scrollbar{display:none}
+  .qbtn{white-space:nowrap;background:#202c33;border:1px solid #2a3942;color:#8fcaff;border-radius:999px;
+      padding:.5em 1em;font-size:.78em;cursor:pointer;font-family:inherit;flex-shrink:0}
+  .qbtn:hover{background:#2a3942}
+  .composer{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--wa-panel);flex-shrink:0}
+  .composer input{flex:1;background:var(--wa-in);border:none;border-radius:999px;padding:11px 16px;
+      color:var(--wa-text);font-size:.92em;outline:none;font-family:inherit}
+  .composer input::placeholder{color:var(--wa-muted)}
+  .send{background:var(--green);border:none;width:42px;height:42px;border-radius:50%;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .send svg{width:20px;height:20px;fill:#0b141a}
+  .demo-tag{position:absolute;top:10px;right:12px;background:#000000a8;color:#ffd;font-size:.6em;
+      padding:.25em .6em;border-radius:6px;z-index:6;letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="demo-tag">DEMO · respuestas simuladas</div>
+
+  <!-- LANDING -->
+  <section class="landing" id="landing">
+    <div class="brand">
+      <div class="brand-mark">FIIS</div>
+      <div>
+        <h1>Suyay 🌱</h1>
+        <p>"esperanza" en quechua · Coach Académico · UNI-FIIS</p>
+      </div>
+    </div>
+    <div class="lead">Una coach por WhatsApp que acompaña a estudiantes de ingeniería.</div>
+    <div class="sub">Construido con <strong>Claude</strong>. Consulta tus notas, calcula qué necesitas para
+      aprobar, te recuerda evaluaciones y te acompaña cuando la carrera pesa.<br><br>
+      Elige un alumno de prueba para conversar 👇</div>
+    <div class="pick-label">Alumnos ficticios de prueba</div>
+    <div id="student-list"></div>
+    <div class="disclaimer">
+      Demo del lado del cliente: las respuestas son <strong>simuladas</strong> (sin servidor, sin Claude API,
+      sin Twilio). Los alumnos y notas son <strong>ficticios</strong>, ningún dato personal real.<br>
+      Proyecto · Modelo Predictivo IA · UNI-FIIS — por
+      <a href="https://unimauro.github.io/" target="_blank" rel="noopener">Carlos M. Cárdenas</a>.
+    </div>
+  </section>
+
+  <!-- CHAT -->
+  <section class="chat" id="chat">
+    <div class="chat-head">
+      <button class="back" id="back" aria-label="Volver">‹</button>
+      <div class="ch-avatar">🌱</div>
+      <div class="ch-info">
+        <div class="ch-name">Suyay · Coach</div>
+        <div class="ch-status" id="ch-status">en línea</div>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="quick" id="quick"></div>
+    <form class="composer" id="composer">
+      <input id="input" type="text" placeholder="Escribe un mensaje…" autocomplete="off">
+      <button class="send" type="submit" aria-label="Enviar">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </form>
+  </section>
+</div>
+
+<script>
+/* ============ Datos ficticios (del seed del proyecto) ============ */
+const COLORS = ['#0ea5e9','#a855f7','#f97316','#10b981','#e11d48'];
+const STUDENTS = {
+  mateo:{ code:'20210010', name:'Mateo Vásquez', first:'Mateo', career:'Ing. de Software', sem:5,
+    risk:'alto', color:COLORS[2],
+    purpose:'crear una app para digitalizar la gestión de talleres mecánicos en Lima — tu papá es mecánico de combis en Comas',
+    course:{ name:'Física I', code:'CF121', enroll:'TRICA (3ra matrícula)', trica:true,
+             pc:[8,10,9,null], ep:11, ef:null, nextEval:'PC4 de Física I en 2 días' } },
+  sofia:{ code:'20210011', name:'Sofía Ramírez', first:'Sofía', career:'Ing. de Sistemas', sem:4,
+    risk:'medio', color:COLORS[1],
+    purpose:'desarrollar apps educativas en quechua para niños del Cusco',
+    course:{ name:'Física II', code:'CF122', enroll:'2da matrícula', trica:false,
+             pc:[12,10,11,13], ep:9, ef:null, nextEval:'Examen Final de Física II en 9 días' } },
+  joaquin:{ code:'20210012', name:'Joaquín Torres', first:'Joaquín', career:'Ing. Industrial', sem:3,
+    risk:'bajo', color:COLORS[3],
+    purpose:'optimizar la cadena de suministro del café peruano',
+    course:{ name:'Cálculo II', code:'CM2', enroll:'1ra matrícula', trica:false,
+             pc:[15,14,16,15], ep:14, ef:null, nextEval:'Examen Parcial en 5 días' } },
+  renata:{ code:'20210013', name:'Renata Huamán', first:'Renata', career:'Ing. Industrial', sem:6,
+    risk:'alto', color:COLORS[4],
+    purpose:'ayudar a tu mamá a escalar su negocio de comida en La Victoria con un sistema de inventario',
+    course:{ name:'Cálculo Diferencial', code:'BMA01', enroll:'TRICA (3ra matrícula)', trica:true,
+             pc:[7,9,8,null], ep:10, ef:null, nextEval:'Examen Final de Cálculo en 6 días' } },
+};
+
+/* ============ Lógica de notas (fórmula real del proyecto) ============
+   NF = (3 mejores PC + EP + 2·EF) / 6 ; aprueba con NF >= 10            */
+function best3(pc){ const r=pc.filter(x=>x!==null); if(r.length<=3) return r.reduce((a,b)=>a+b,0);
+  return r.sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0); }
+function requiredEF(c){ const need=10*6-(best3(c.pc)+c.ep); return Math.max(0,Math.min(20,need/2)); }
+function pcPending(c){ return c.pc.filter(x=>x===null).length; }
+
+/* ============ Motor de intención ============ */
+function intentOf(text){
+  const t=text.toLowerCase();
+  if(/(hola|buenas|holaa|hey|qué tal|que tal)/.test(t)) return 'greet';
+  if(/(nota|como voy|cómo voy|cómo estoy|como estoy|situaci|voy bien|mi curso|mis curso)/.test(t)) return 'grades';
+  if(/(aprob|necesito|cuanto|cuánto|para pasar|examen final|el final|jalo|jalar|salvar|salvo)/.test(t)) return 'required';
+  if(/(evaluaci|examen|prueba|fecha|cuando|cuándo|próx|proxim|recordat|pc4|pc )/.test(t)) return 'evals';
+  if(/(desmotiv|triste|mal|no puedo|no doy|estres|estrés|ansie|cansad|agobi|rendir|deprim|harto|frustr|pesad|llor)/.test(t)) return 'support';
+  if(/(propósit|proposito|por qué|por que|porque|sentido|sueño|sueno|meta|para qué|para que|vale la pena)/.test(t)) return 'purpose';
+  if(/(gracias|graciasss|chévere|chevere|bacán|bacan|genial|listo)/.test(t)) return 'thanks';
+  if(/(trica)/.test(t)) return 'trica';
+  return 'fallback';
+}
+
+function reply(student, intent){
+  const s=student, c=s.course, f=s.first;
+  const req=requiredEF(c), pend=pcPending(c);
+  switch(intent){
+    case 'greet': return [`Holaaa ${f}! 🌱 ¿cómo va tu día?`,
+        `Cuéntame, ¿quieres ver cómo vas en ${c.name} o conversamos un rato?`];
+    case 'grades':{
+      const pcs=c.pc.map(x=>x===null?'—':x).join(', ');
+      if(c.trica) return [`Estás en ${c.name}, y ojo: es ${c.enroll}.`,
+          `Tus PC van ${pcs} y el parcial ${c.ep}. Te falta ${pend>0?'la PC4 y ':''}el final. ¿Lo armamos juntos?`];
+      return [`En ${c.name} vas con PC ${pcs} y parcial ${c.ep}.`,
+          req<=0?`¡Ya tienes el curso prácticamente asegurado! 💪 ¿seguimos afinando?`
+                :`Vas en carrera. ¿Quieres que calcule cuánto necesitas en el final?`];
+    }
+    case 'required':{
+      if(req<=0) return [`Tranqui ${f}, con tus notas ya estás aprobando ${c.name} 🎉`,
+          `Igual no sueltes el final, ¿en qué tema te sientes más flojo?`];
+      const line=`Necesitas ${req.toFixed(1).replace('.0','')} en el final para aprobar ${c.name}, ${f}.`;
+      if(c.trica) return [line,
+          `Sé que es ${c.enroll} y pesa, pero ${req<=12?'ese número es alcanzable':'lo vamos a pelear'}. ¿Empezamos por la PC4?`];
+      return [line, req<=10?`Eso lo sacas tranqui 💪 ¿lo planeamos?`:`Es exigente pero se puede. ¿Cuántas horas tienes esta semana?`];
+    }
+    case 'evals': return [`Lo más cercano que tienes es ${c.nextEval}.`,
+        `¿Quieres que te ayude a armar un plan corto para llegar listo?`];
+    case 'support':{
+      const head=c.trica?`Uf ${f}, te entiendo full. Estar en TRICA aprieta a cualquiera.`
+                        :`Uf, te entiendo ${f}. La FIIS a veces pesa harto.`;
+      return [head, `No tienes que con todo solo. ¿Qué es lo que más te está cargando ahorita?`];
+    }
+    case 'purpose': return [`Acuérdate por qué estás acá: quieres ${s.purpose}.`,
+        `Eso vale, ${f}. Cada PC te acerca un poco. ¿Damos el siguiente paso juntos?`];
+    case 'thanks': return [`Para eso estoy 🌱 cuando quieras me escribes, ${f}.`,
+        `Vamos con todo, ¿ya? 💪`];
+    case 'trica': return [`TRICA es la última matrícula del curso: si jalas, lo pierdes para siempre.`,
+        c.trica?`Tú estás justo ahí en ${c.name}, por eso lo cuidamos bien. ¿Empezamos?`
+               :`Por suerte no estás en TRICA en tus cursos. ¿Vemos cómo vas?`];
+    default: return [`Te leo, ${f} 🌱`,
+        `Puedo ayudarte con tus notas, qué necesitas para aprobar, tus evaluaciones, o si solo quieres conversar. ¿Qué prefieres?`];
+  }
+}
+
+/* ============ UI ============ */
+const $=s=>document.querySelector(s);
+const landing=$('#landing'), chat=$('#chat'), msgs=$('#messages'),
+      quick=$('#quick'), input=$('#input'), status=$('#ch-status');
+let current=null;
+
+function buildList(){
+  const wrap=$('#student-list');
+  wrap.innerHTML=Object.entries(STUDENTS).map(([k,s])=>{
+    const ini=s.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    return `<button class="student-btn" data-k="${k}">
+      <div class="avatar" style="background:${s.color}">${ini}</div>
+      <div class="sb-info">
+        <div class="sb-name">${s.name}</div>
+        <div class="sb-meta">${s.code} · ${s.career} · ${s.course.name}</div>
+      </div>
+      <span class="pill ${s.risk}">${s.risk}</span>
+    </button>`;
+  }).join('');
+  wrap.querySelectorAll('.student-btn').forEach(b=>
+    b.addEventListener('click',()=>openChat(b.dataset.k)));
+}
+
+const QUICK=['¿Cómo voy?','¿Qué necesito para aprobar?','Mis evaluaciones','Estoy desmotivado','¿Por qué estudio ingeniería?'];
+function buildQuick(){
+  quick.innerHTML=QUICK.map(q=>`<button class="qbtn">${q}</button>`).join('');
+  quick.querySelectorAll('.qbtn').forEach(b=>
+    b.addEventListener('click',()=>handleUser(b.textContent)));
+}
+
+function ts(){ return '11:0'+(Math.floor(2+now())%9)+' a. m.'; }
+let _seed=3; function now(){ _seed=(_seed*7+3)%97; return _seed; } // pseudo-time, sin Date()
+
+function addBubble(text,cls){
+  const b=document.createElement('div');
+  b.className='bubble '+cls;
+  b.innerHTML=text.replace(/</g,'&lt;')+`<span class="t">${ts()}${cls==='out'?' ✓✓':''}</span>`;
+  msgs.appendChild(b); msgs.scrollTop=msgs.scrollHeight;
+}
+function showTyping(){
+  const t=document.createElement('div'); t.className='typing'; t.id='typing';
+  t.innerHTML='<span></span><span></span><span></span>';
+  msgs.appendChild(t); msgs.scrollTop=msgs.scrollHeight; return t;
+}
+function hideTyping(){ const t=$('#typing'); if(t) t.remove(); }
+
+let timer=null;
+function suyaySay(bubbles,i=0){
+  if(i===0){ status.textContent='escribiendo…'; }
+  showTyping();
+  timer=setTimeout(()=>{
+    hideTyping(); addBubble(bubbles[i],'in');
+    if(i+1<bubbles.length){ suyaySay(bubbles,i+1); }
+    else { status.textContent='en línea'; }
+  }, 650+bubbles[i].length*16);
+}
+
+function handleUser(text){
+  if(!text.trim()||!current) return;
+  addBubble(text,'out');
+  input.value='';
+  if(timer) clearTimeout(timer); hideTyping();
+  const intent=intentOf(text);
+  suyaySay(reply(STUDENTS[current],intent));
+}
+
+function openChat(key){
+  current=key; const s=STUDENTS[key];
+  landing.classList.add('hide'); chat.classList.add('show');
+  msgs.innerHTML='<div class="day-sep">HOY</div>';
+  buildQuick();
+  const c=s.course;
+  suyaySay([`Holaaa! 🌱 soy Suyay, tu coach. ¿Con quién hablo?`,
+    `Ah ${s.first}, ${s.code} ¿no? Te tengo en ${c.name} (${c.enroll}). ¿Cómo estás hoy?`]);
+}
+
+$('#back').addEventListener('click',()=>{
+  if(timer) clearTimeout(timer);
+  chat.classList.remove('show'); landing.classList.remove('hide'); current=null;
+});
+$('#composer').addEventListener('submit',e=>{ e.preventDefault(); handleUser(input.value); });
+
+buildList();
+</script>
+</body>
+</html>
